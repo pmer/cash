@@ -1,25 +1,30 @@
 #!/bin/sh
-set -e
+set -eu
 
-if [ $# -ne 1 ]; then
-  echo >&2 "usage: $0 example.com"
+if [ $# -lt 1 ]; then
+  echo >&2 "usage: $0 example.com [subpaths]"
   exit 1
 fi
 
-site=$1
+site="$1"
+shift
 
-cd `dirname $0`/..
-
+cd `dirname "$0"`/..
 mkdir -p cache-data
 
-ip=`dig +short $1 | head -n 1`
+ip=`dig +short "$site" | head -n 1`
 
-cat > /opt/homebrew/etc/nginx/servers/cache.conf <<EOF
+sites_dir=/opt/homebrew/etc/nginx/servers
+
+global_file="$sites_dir"/cash-global.conf
+site_file="$sites_dir"/cash-"$site".conf
+
+cat > "$global_file" <<EOF
 server_names_hash_bucket_size 64;
 server_names_hash_max_size 512;
 EOF
 
-cat > /opt/homebrew/etc/nginx/servers/$site.conf <<EOF
+cat > "$site_file" <<EOF
 # One week.
 proxy_cache_path $PWD/cache-data/$site keys_zone=response-$site:10080m;
 
@@ -27,16 +32,26 @@ server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
 
-    ssl_protocols TLSv1.2 TLSv1.3;
-
-    ssl_session_cache shared:tls-$site:1m;
+    server_name $site;
 
     ssl_certificate $PWD/certs/$site.crt;
     ssl_certificate_key $PWD/certs/$site.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:tls-$site:1m;
 
-    server_name $site;
+    proxy_ssl_protocols TLSv1.2 TLSv1.3;
+    proxy_ssl_server_name on;
+    proxy_ssl_name $site;
+    proxy_http_version 1.1;
+    proxy_set_header Host $site;
 
-    location / {
+    location @passthrough {
+        proxy_pass https://$ip;
+
+        add_header Cash-Status PASSTHROUGH;
+    }
+
+    location @cache {
         if (\$request_method = OPTIONS) {
             add_header Access-Control-Allow-Credentials true;
             add_header Access-Control-Allow-Headers *;
@@ -53,12 +68,6 @@ server {
 
         proxy_pass https://$ip;
 
-        proxy_http_version 1.1;
-        proxy_ssl_protocols TLSv1.2 TLSv1.3;
-        proxy_ssl_server_name on;
-        proxy_ssl_name $site;
-        proxy_set_header Host $site;
-
         proxy_ignore_headers Cache-Control;
         proxy_ignore_headers Expires;
         proxy_hide_header Cache-Control;
@@ -71,11 +80,48 @@ server {
         proxy_cache response-$site;
         proxy_cache_valid any 10080m;  # One week.
     }
+EOF
+
+if [ $# -gt 0 ]; then
+    need_passthrough=yes
+    loc="$1"
+else
+    need_passthrough=no
+    loc=/
+fi
+
+while [ -n "$loc" ]; do
+    cat >> "$site_file" <<EOF
+
+    location $loc {
+        try_files /dev/null @cache;
+    }
+EOF
+
+    if shift && [ $# -gt 0 ]; then
+        loc="$1"
+    else
+        loc=
+    fi
+done
+
+if [ "$need_passthrough" = 'yes' ]; then
+    cat >> "$site_file" <<EOF
+
+    location / {
+        try_files /dev/null @passthrough;
+    }
+EOF
+fi
+
+cat >> "$site_file" <<EOF
 }
 EOF
 
-sudo cp /etc/hosts /etc/hosts.`date +%s`
-
-sudo sed -i '' "/ $site\$/d" /etc/hosts
-sudo sh -c "echo 127.0.0.1 $site >> /etc/hosts"
-sudo sh -c "echo ::1 $site >> /etc/hosts"
+sudo sh -c \
+    "
+    cp /etc/hosts /etc/hosts.`date +%s`
+    sed -i '' /\ $site\$/d /etc/hosts
+    echo 127.0.0.1 $site >> /etc/hosts
+    echo ::1 $site >> /etc/hosts
+    "
