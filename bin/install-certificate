@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+if [ $# -ne 1 ]; then
+  echo >&2 "usage: $0 example.com"
+  exit 1
+fi
+
+site=$1
+
+cd `dirname $0`
+
+sudo security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db certs/$site.crt

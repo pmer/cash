@@ -2,15 +2,17 @@
 set -e
 
 if [ $# -ne 1 ]; then
-  echo >&2 'usage: $0 example.com'
+  echo >&2 "usage: $0 example.com"
   exit 1
 fi
 
 site=$1
 
-ip=`dig +short $1 | head -n 1`
+cd `dirname $0`
 
 mkdir -p cache-data
+
+ip=`dig +short $1 | head -n 1`
 
 cat > /opt/homebrew/etc/nginx/servers/cache.conf <<EOF
 server_names_hash_bucket_size 64;
