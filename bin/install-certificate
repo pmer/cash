@@ -8,6 +8,6 @@ fi
 
 site=$1
 
-cd `dirname $0`
+cd `dirname $0`/..
 
 sudo security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db certs/$site.crt
