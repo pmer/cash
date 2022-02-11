@@ -6,22 +6,19 @@ configs that use them and cache upstream resources.
 ## Usage
 
 ```bash
-site=cdn.jsdelivr.net
+$ cat >sites.txt
+cdnjs.cloudflare.com
+github.githubassets.com
+ajax.googleapis.com
+EOF
 
-# Make a self-signed certificate for $site.
-bin/generate-cert $site
-
-# Install the certificate to your login keychain.
-bin/install-certificate $site
-
-# Create an nginx server configuration.
-bin/install-nginx $site
-
-# Run nginx
-bin/run-nginx
+$ ./main
 ```
 
-One can cache as many sites as they wish.
+One may cache as many sites as wished.
+
+The first time it is run, a certificate authority will be generated and must be
+installed.
 
 ## How it works
 
