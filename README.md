@@ -20,7 +20,10 @@ $ ./main
 One may cache as many sites as wished.
 
 The first time it is run, a certificate authority will be generated and must be
-installed.
+installed. It is automatically installed in the macOS keychain, which Safari
+and Chrome will pick up. It may be imported to Firefox via "Preferences" ->
+"Privacy & Security" -> "Certificates" -> "View Certificates" -> "Authorities"
+-> "Import" -> "Trust this CA to identify websites."
 
 ## How it works
 
