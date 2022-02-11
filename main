@@ -1,0 +1,32 @@
+#!/bin/sh
+set -eu
+
+cd `dirname $0`
+
+if ! [ -e sites.txt ]; then
+    echo >&2 'Need sites.txt'
+    exit 1
+fi
+
+setup() {
+    site="$1"
+    shift
+
+    if ! [ -e certs/"$site".crt ]; then
+        echo "No certficate for site $site, creating one..."
+        bin/generate-certificate "$site"
+
+        echo "Installing certificate for $site..."
+        bin/install-certificate "$site"
+    fi
+
+    echo "Configuring $site..."
+    bin/install-nginx "$site" "$@"
+}
+
+while read; do
+    setup $REPLY
+done < sites.txt
+
+echo 'Running nginx'
+bin/run-nginx

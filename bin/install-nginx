@@ -2,8 +2,8 @@
 set -eu
 
 if [ $# -lt 1 ]; then
-  echo >&2 "usage: $0 example.com [subpaths]"
-  exit 1
+    echo >&2 "usage: $0 example.com [subpaths...]"
+    exit 1
 fi
 
 site="$1"
