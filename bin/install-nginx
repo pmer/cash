@@ -27,6 +27,8 @@ server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
 
+    ssl_protocols TLSv1.2 TLSv1.3;
+
     ssl_session_cache shared:tls-$site:1m;
 
     ssl_certificate $PWD/certs/$site.crt;
