@@ -21,10 +21,10 @@ setup() {
 }
 
 if ! [ -e certs/root.crt ]; then
-    echo "Creating certificate authority..."
+    echo 'Creating certificate authority...'
     bin/generate-ca
 
-    echo "Installing certificate authority..."
+    echo 'Installing certificate authority...'
     bin/install-certificate
 fi
 
