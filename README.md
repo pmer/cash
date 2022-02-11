@@ -19,3 +19,13 @@ site=cdn.jsdelivr.net
 # Run nginx
 ./nginx.sh
 ```
+
+One can cache as many sites as they wish.
+
+## How it works
+
+It creates an entry in `/etc/hosts` for the site.
+
+Nginx listens for the Host header in incoming requests to route the request to
+upstream via its IP address since hostname look-ups no longer work for the site
+on your computer.
