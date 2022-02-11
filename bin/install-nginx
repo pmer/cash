@@ -21,11 +21,13 @@ EOF
 
 cat > /opt/homebrew/etc/nginx/servers/$site.conf <<EOF
 # One week.
-proxy_cache_path $PWD/cache-data/$site keys_zone=$site:10080m;
+proxy_cache_path $PWD/cache-data/$site keys_zone=response-$site:10080m;
 
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
+
+    ssl_session_cache shared:tls-$site:1m;
 
     ssl_certificate $PWD/certs/$site.crt;
     ssl_certificate_key $PWD/certs/$site.key;
@@ -33,6 +35,20 @@ server {
     server_name $site;
 
     location / {
+        if (\$request_method = OPTIONS) {
+            add_header Access-Control-Allow-Credentials true;
+            add_header Access-Control-Allow-Headers *;
+            add_header Access-Control-Allow-Methods *;
+            add_header Access-Control-Allow-Origin *;
+            add_header Access-Control-Max-Age 604800;  # One week.
+            add_header Content-Length 0;
+            add_header Cash-Status CONSTANT;
+
+            return 204;
+
+            break;
+        }
+
         proxy_pass https://$ip;
 
         proxy_http_version 1.1;
@@ -50,7 +66,7 @@ server {
         add_header Cash-Status \$upstream_cache_status;  # Show HIT or MISS.
         add_header Cash-Date \$upstream_http_date;  # Show date.
 
-        proxy_cache $site;
+        proxy_cache response-$site;
         proxy_cache_valid any 10080m;  # One week.
     }
 }
