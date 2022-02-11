@@ -29,3 +29,5 @@ It creates an entry in `/etc/hosts` for the site.
 Nginx listens for the Host header in incoming requests to route the request to
 upstream via its CNAME, A, AAAA record at time of installation since system
 look-ups no longer work for the site on your computer.
+
+Certificates are stored in `./certs` and cached responses are stored in `./cache-data`.
