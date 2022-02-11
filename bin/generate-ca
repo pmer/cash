@@ -1,0 +1,14 @@
+#!/bin/bash
+set -eu
+cd "$(dirname $0)"/..
+
+ca=certs/root
+five_years=1825
+
+cn="Cash Root CA from $(date)"
+c=US
+o="Cash-$(hostname)"
+
+mkdir -p certs
+openssl genpkey -algorithm RSA -out "$ca".key
+openssl req -x509 -new -nodes -key "$ca".key -sha256 -days "$five_years" -out "$ca".crt -subj "/CN=$cn/C=$c/O=$o"

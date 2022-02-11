@@ -1,30 +1,29 @@
-#!/bin/sh
+#!/bin/bash
 set -eu
+cd "$(dirname "$0")"/..
 
 if [ $# -lt 1 ]; then
     echo >&2 "usage: $0 example.com [subpaths...]"
     exit 1
 fi
-
 site="$1"
 shift
-
-cd `dirname "$0"`/..
-mkdir -p cache-data
-
-ip=`dig +short "$site" | head -n 1`
 
 sites_dir=/opt/homebrew/etc/nginx/servers
 
 global_file="$sites_dir"/cash-global.conf
 site_file="$sites_dir"/cash-"$site".conf
 
-cat > "$global_file" <<EOF
+ip="$(dig +short "$site" | head -n 1)"
+
+mkdir -p cache-data
+
+cat >"$global_file" <<EOF
 server_names_hash_bucket_size 64;
 server_names_hash_max_size 512;
 EOF
 
-cat > "$site_file" <<EOF
+cat >"$site_file" <<EOF
 # One week.
 proxy_cache_path $PWD/cache-data/$site keys_zone=response-$site:10080m;
 
@@ -91,7 +90,7 @@ else
 fi
 
 while [ -n "$loc" ]; do
-    cat >> "$site_file" <<EOF
+    cat >>"$site_file" <<EOF
 
     location $loc {
         try_files /dev/null @cache;
@@ -106,7 +105,7 @@ EOF
 done
 
 if [ "$need_passthrough" = 'yes' ]; then
-    cat >> "$site_file" <<EOF
+    cat >>"$site_file" <<EOF
 
     location / {
         try_files /dev/null @passthrough;
@@ -114,13 +113,13 @@ if [ "$need_passthrough" = 'yes' ]; then
 EOF
 fi
 
-cat >> "$site_file" <<EOF
+cat >>"$site_file" <<EOF
 }
 EOF
 
 sudo sh -c \
     "
-    cp /etc/hosts /etc/hosts.`date +%s`
+    cp /etc/hosts /etc/hosts.$(date +%s)
     sed -i '' /\ $site\$/d /etc/hosts
     echo 127.0.0.1 $site >> /etc/hosts
     echo ::1 $site >> /etc/hosts

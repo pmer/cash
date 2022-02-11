@@ -1,0 +1,16 @@
+#!/bin/bash
+set -eu
+cd "$(dirname "$0")"/..
+
+ca=certs/root
+
+# macOS
+sudo security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db "$ca".crt
+
+# Debian?
+#sudo cp "$ca".crt /usr/local/share/ca-certificates/
+#sudo update-ca-certificates
+
+# Fedora?
+#sudo cp "$ca".crt /etc/pki/ca-trust/source/anchors/
+#sudo update-ca-trust

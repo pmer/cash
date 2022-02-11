@@ -1,2 +1,4 @@
-#!/bin/sh
+#!/bin/bash
+set -eu
+
 sudo /opt/homebrew/opt/nginx/bin/nginx -g 'daemon off;'
