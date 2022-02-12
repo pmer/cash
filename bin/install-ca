@@ -5,7 +5,15 @@ cd "$(dirname "$0")"/..
 ca=certs/root
 
 # macOS
-sudo security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db "$ca".crt
+for file in \
+    ~/Library/Keychains/login.keychain-db \
+    ~/Library/Keychains/login.keychain; do
+    if [ -e "$file" ]; then
+        keychain="$file"
+    fi
+done
+
+sudo security add-trusted-cert -d -r trustRoot -k "$keychain" "$ca".crt
 
 # Debian?
 #sudo cp "$ca".crt /usr/local/share/ca-certificates/
