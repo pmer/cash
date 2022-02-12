@@ -9,7 +9,11 @@ fi
 site="$1"
 shift
 
-sites_dir=/opt/homebrew/etc/nginx/servers
+if [ -n "${CASH_SITES_DIR-}" ]; then
+    sites_dir="$CASH_SITES_DIR"
+else
+    sites_dir=/opt/homebrew/etc/nginx/servers
+fi
 
 global_file="$sites_dir"/cash-global.conf
 site_file="$sites_dir"/cash-"$site".conf

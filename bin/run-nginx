@@ -1,4 +1,10 @@
 #!/bin/bash
 set -eu
 
-sudo /opt/homebrew/opt/nginx/bin/nginx -g 'daemon off;'
+if [ -n "${CASH_NGINX-}" ]; then
+    nginx="$CASH_NGINX"
+else
+    nginx=/opt/homebrew/opt/nginx/bin/nginx
+fi
+
+sudo "$nginx" -g 'daemon off;'
