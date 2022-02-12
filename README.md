@@ -7,11 +7,11 @@ configs that use them and cache upstream resources.
 
 ```bash
 $ cat >sites.txt
-cdnjs.cloudflare.com
-ajax.googleapis.com
-fonts.gstatic.com
-cdn.jsdelivr.net
-unpkg.com
+cdnjs.cloudflare.com /
+ajax.googleapis.com /
+fonts.gstatic.com /
+cdn.jsdelivr.net /
+unpkg.com /
 EOF
 
 $ ./main
