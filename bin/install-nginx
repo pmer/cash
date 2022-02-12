@@ -14,12 +14,12 @@ sites_dir=/opt/homebrew/etc/nginx/servers
 global_file="$sites_dir"/cash-global.conf
 site_file="$sites_dir"/cash-"$site".conf
 
-ip="$(dig +short "$site" | head -n 1)"
+ip="$(dig +short "$site" | sort | head -n 1)"
 
 mkdir -p cache-data
 
 cat >"$global_file" <<EOF
-server_names_hash_bucket_size 64;
+server_names_hash_bucket_size 128;
 server_names_hash_max_size 512;
 EOF
 
@@ -45,12 +45,6 @@ server {
     proxy_set_header Host $site;
 
     location @passthrough {
-        proxy_pass https://$ip;
-
-        add_header Cash-Status PASSTHROUGH;
-    }
-
-    location @cache {
         if (\$request_method = OPTIONS) {
             add_header Access-Control-Allow-Credentials true;
             add_header Access-Control-Allow-Headers *;
@@ -58,7 +52,41 @@ server {
             add_header Access-Control-Allow-Origin *;
             add_header Access-Control-Max-Age 604800;  # One week.
             add_header Content-Length 0;
-            add_header Cash-Status CONSTANT;
+
+            add_header Cash-Status PASSTHROUGH-CONSTANT;
+
+            return 204;
+
+            break;
+        }
+
+        proxy_pass https://$ip;
+
+        proxy_hide_header Access-Control-Allow-Credentials;
+        proxy_hide_header Access-Control-Allow-Headers;
+        proxy_hide_header Access-Control-Allow-Methods;
+        proxy_hide_header Access-Control-Allow-Origin;
+        proxy_hide_header Access-Control-Max-Age;
+
+        add_header Access-Control-Allow-Credentials true;
+        add_header Access-Control-Allow-Headers *;
+        add_header Access-Control-Allow-Methods *;
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Max-Age 604800;  # One week.
+
+        add_header Cash-Status PASSTHROUGH;
+    }
+
+    location @cache_with_args {
+        if (\$request_method = OPTIONS) {
+            add_header Access-Control-Allow-Credentials true;
+            add_header Access-Control-Allow-Headers *;
+            add_header Access-Control-Allow-Methods *;
+            add_header Access-Control-Allow-Origin *;
+            add_header Access-Control-Max-Age 604800;  # One week.
+            add_header Content-Length 0;
+
+            add_header Cash-Status CACHE-CONSTANT;
 
             return 204;
 
@@ -69,39 +97,97 @@ server {
 
         proxy_ignore_headers Cache-Control;
         proxy_ignore_headers Expires;
+        proxy_hide_header Access-Control-Allow-Credentials;
+        proxy_hide_header Access-Control-Allow-Headers;
+        proxy_hide_header Access-Control-Allow-Methods;
+        proxy_hide_header Access-Control-Allow-Origin;
+        proxy_hide_header Access-Control-Max-Age;
         proxy_hide_header Cache-Control;
         proxy_hide_header Content-Security-Policy;
         proxy_hide_header Expires;
+
+        add_header Access-Control-Allow-Credentials true;
+        add_header Access-Control-Allow-Headers *;
+        add_header Access-Control-Allow-Methods *;
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Max-Age 604800;  # One week.
 
         add_header Cash-Status \$upstream_cache_status;  # Show HIT or MISS.
         add_header Cash-Date \$upstream_http_date;  # Show date.
 
         proxy_cache response-$site;
         proxy_cache_valid any 10080m;  # One week.
+
+        proxy_cache_key \$request_method/\$scheme/$site/\$request_uri;
+    }
+
+    location @cache_without_args {
+        if (\$request_method = OPTIONS) {
+            add_header Access-Control-Allow-Credentials true;
+            add_header Access-Control-Allow-Headers *;
+            add_header Access-Control-Allow-Methods *;
+            add_header Access-Control-Allow-Origin *;
+            add_header Access-Control-Max-Age 604800;  # One week.
+            add_header Content-Length 0;
+
+            add_header Cash-Status CACHE-CONSTANT;
+
+            return 204;
+
+            break;
+        }
+
+        proxy_pass https://$ip;
+
+        proxy_ignore_headers Cache-Control;
+        proxy_ignore_headers Expires;
+        proxy_hide_header Access-Control-Allow-Credentials;
+        proxy_hide_header Access-Control-Allow-Headers;
+        proxy_hide_header Access-Control-Allow-Methods;
+        proxy_hide_header Access-Control-Allow-Origin;
+        proxy_hide_header Access-Control-Max-Age;
+        proxy_hide_header Cache-Control;
+        proxy_hide_header Content-Security-Policy;
+        proxy_hide_header Expires;
+
+        add_header Access-Control-Allow-Credentials true;
+        add_header Access-Control-Allow-Headers *;
+        add_header Access-Control-Allow-Methods *;
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Max-Age 604800;  # One week.
+
+        add_header Cash-Status \$upstream_cache_status;  # Show HIT or MISS.
+        add_header Cash-Date \$upstream_http_date;  # Show date.
+
+        proxy_cache response-$site;
+        proxy_cache_valid any 10080m;  # One week.
+
+        proxy_cache_key \$request_method/\$scheme/$site/\$uri;
     }
 EOF
 
-if [ $# -gt 0 ]; then
-    need_passthrough=yes
-    loc="$1"
-else
-    need_passthrough=no
-    loc=/
-fi
+need_passthrough=yes
 
-while [ -n "$loc" ]; do
+while [ $# -gt 0 ]; do
+    block=@cache_with_args
+    if [ "$1" = '-noargs' ]; then
+        block=@cache_without_args
+        shift
+    fi
+
+    loc="$1"
+    shift
+
+    if [ "$loc" = '/' ]; then
+        need_passthrough=no
+    fi
+
     cat >>"$site_file" <<EOF
 
     location $loc {
-        try_files /dev/null @cache;
+        try_files /dev/null $block;
     }
 EOF
-
-    if shift && [ $# -gt 0 ]; then
-        loc="$1"
-    else
-        loc=
-    fi
 done
 
 if [ "$need_passthrough" = 'yes' ]; then
