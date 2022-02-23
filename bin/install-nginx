@@ -66,6 +66,8 @@ server {
 
         proxy_pass https://$ip;
 
+        proxy_set_header Connection "";
+
         proxy_hide_header Access-Control-Allow-Credentials;
         proxy_hide_header Access-Control-Allow-Headers;
         proxy_hide_header Access-Control-Allow-Methods;
@@ -98,6 +100,8 @@ server {
         }
 
         proxy_pass https://$ip;
+
+        proxy_set_header Connection "";
 
         proxy_ignore_headers Cache-Control;
         proxy_ignore_headers Expires;
@@ -142,6 +146,8 @@ server {
         }
 
         proxy_pass https://$ip;
+
+        proxy_set_header Connection "";
 
         proxy_ignore_headers Cache-Control;
         proxy_ignore_headers Expires;
@@ -210,7 +216,7 @@ EOF
 sudo sh -c \
     "
     cp /etc/hosts /etc/hosts.$(date +%s)
-    sed -i '' /\ $site\$/d /etc/hosts
-    echo 127.0.0.1 $site >> /etc/hosts
-    echo ::1 $site >> /etc/hosts
+    sed -i '' /\ $site\ /d /etc/hosts
+    echo 127.0.0.1 $site \\# cash >> /etc/hosts
+    echo ::1 $site \\# cash >> /etc/hosts
     "
