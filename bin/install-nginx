@@ -46,7 +46,6 @@ server {
     proxy_ssl_server_name on;
     proxy_ssl_name $site;
     proxy_http_version 1.1;
-    proxy_set_header Host $site;
 
     location @passthrough {
         if (\$request_method = OPTIONS) {
@@ -67,6 +66,7 @@ server {
         proxy_pass https://$ip;
 
         proxy_set_header Connection "";
+        proxy_set_header Host $site;
 
         proxy_hide_header Access-Control-Allow-Credentials;
         proxy_hide_header Access-Control-Allow-Headers;
@@ -102,6 +102,7 @@ server {
         proxy_pass https://$ip;
 
         proxy_set_header Connection "";
+        proxy_set_header Host $site;
 
         proxy_ignore_headers Cache-Control;
         proxy_ignore_headers Expires;
@@ -148,6 +149,7 @@ server {
         proxy_pass https://$ip;
 
         proxy_set_header Connection "";
+        proxy_set_header Host $site;
 
         proxy_ignore_headers Cache-Control;
         proxy_ignore_headers Expires;
